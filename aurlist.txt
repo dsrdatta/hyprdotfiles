@@ -1,0 +1,12 @@
+brave-bin
+mirage
+nordvpn-bin
+pokemon-colorscripts-git
+postman-bin
+systemd-numlockontty
+ttf-victor-mono
+vscodium-bin
+wallust
+wlogout
+yay
+yay-debug
