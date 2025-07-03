@@ -3,10 +3,13 @@ mirage
 nordvpn-bin
 pokemon-colorscripts-git
 postman-bin
+python312
 systemd-numlockontty
 ttf-victor-mono
 vscodium-bin
 wallust
 wlogout
+xone-dkms-git
+xone-dongle-firmware
 yay
 yay-debug

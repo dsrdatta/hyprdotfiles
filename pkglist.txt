@@ -9,6 +9,8 @@ brightnessctl
 btop
 cava
 cliphist
+cuda
+cuda-tools
 dosfstools
 efibootmgr
 fastfetch
@@ -45,6 +47,7 @@ mousepad
 mpv-mpris
 mtools
 nano
+ncdu
 neovim
 network-manager-applet
 networkmanager
@@ -71,6 +74,7 @@ python-requests
 qalculate-gtk
 qt5ct
 qt6ct
+reflector
 rofi-wayland
 rsync
 sddm
@@ -87,6 +91,7 @@ thunar-archive-plugin
 thunar-volman
 tmux
 tree
+ttf-dejavu
 ttf-droid
 ttf-fantasque-nerd
 ttf-fira-code
