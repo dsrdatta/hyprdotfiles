@@ -2,6 +2,7 @@ adobe-source-code-pro-fonts
 base
 base-devel
 bc
+bind
 blueman
 bluez
 bluez-utils
@@ -51,6 +52,7 @@ ncdu
 neovim
 network-manager-applet
 networkmanager
+nmap
 noto-fonts
 noto-fonts-emoji
 npm
