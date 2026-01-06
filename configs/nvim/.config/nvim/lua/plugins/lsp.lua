@@ -2,6 +2,11 @@ return { -- LSP Configuration & Plugins
 	"neovim/nvim-lspconfig",
 	dependencies = {
 		-- Automatically install LSPs and related tools to stdpath for neovim
+		-- 👇 Add this FIRST
+		{
+			"folke/neodev.nvim",
+			opts = {}, -- must be set up before lua_ls
+		},
 		"williamboman/mason.nvim",
 		"williamboman/mason-lspconfig.nvim",
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
@@ -26,6 +31,8 @@ return { -- LSP Configuration & Plugins
 		},
 	},
 	config = function()
+		require("neodev").setup({})
+
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = vim.api.nvim_create_augroup("lsp-attach", { clear = true }),
 			-- Create a function that lets us more easily define mappings specific LSP related items.
@@ -120,6 +127,7 @@ return { -- LSP Configuration & Plugins
 							-- for your neovim configuration.
 							library = {
 								vim.fn.stdpath("config") .. "/lua",
+								vim.fn.stdpath("data") .. "/lazy",
 								"${3rd}/luv/library",
 								vim.api.nvim_get_runtime_file("", true),
 							},
