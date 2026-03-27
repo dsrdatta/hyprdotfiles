@@ -1,146 +1,98 @@
 #!/usr/bin/env python3
-# /* ---- 💫 https://github.com/JaKooLit 💫 ---- */  #
-# original code https://gist.github.com/Surendrajat/ff3876fd2166dd86fb71180f4e9342d7
-# weather using python
-
-import requests
 import json
 import os
-from pyquery import PyQuery  # install using `pip install pyquery`
 
-# weather icons
+import requests
+
+# Mapping Open-Meteo WMO codes to your specific Nerd Font icons
+# https://open-meteo.com/en/docs
 weather_icons = {
-    "sunnyDay": "󰖙",
-    "clearNight": "󰖔",
-    "cloudyFoggyDay": "",
-    "cloudyFoggyNight": "",
-    "rainyDay": "",
-    "rainyNight": "",
-    "snowyIcyDay": "",
-    "snowyIcyNight": "",
-    "severe": "",
+    "0": "󰖙",  # Clear sky
+    "1": "󰖙",  # Mainly clear
+    "2": "",  # Partly cloudy
+    "3": "",  # Overcast
+    "45": "",  # Fog
+    "48": "",  # Depositing rime fog
+    "51": "",  # Drizzle: Light
+    "61": "",  # Rain: Slight
+    "63": "",  # Rain: Moderate
+    "71": "",  # Snow fall: Slight
+    "73": "",  # Snow fall: Moderate
+    "95": "",  # Thunderstorm
     "default": "",
 }
 
 
-# Get current location based on IP address
 def get_location():
-    response = requests.get("https://ipinfo.io")
-    data = response.json()
-    loc = data["loc"].split(",")
-    return float(loc[0]), float(loc[1])
+    try:
+        response = requests.get("https://ipinfo.io/json", timeout=5)
+        data = response.json()
+        lat, lon = data["loc"].split(",")
+        return lat, lon
+    except:
+        return "43.8509", "-79.0204"  # Default to Ajax, ON if IP lookup fails
 
 
-# Get latitude and longitude
-latitude, longitude = get_location()
+def get_weather():
+    lat, lon = get_location()
 
-# Open-Meteo API endpoint
-url = f"https://weather.com/en-PH/weather/today/l/{latitude},{longitude}"
+    # API call for current weather + daily (for min/max) + hourly (for rain chance)
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min,apparent_temperature_max&timezone=auto"
 
-# manual location_id
-# NOTE: if you want to add manually, make sure you disable def get_location above
-# to get your own location_id, go to https://weather.com & search your location.
-# once you choose your location, you can see the location_id in the URL(64 chars long hex string)
-# like this: https://weather.com/en-PH/weather/today/l/bca47d1099e762a012b9a139c36f30a0b1e647f69c0c4ac28b537e7ae9c1c200
-# location_id = "bca47d1099e762a012b9a139c36f30a0b1e647f69c0c4ac28b537e7ae9c1c200"  # TODO
+    try:
+        response = requests.get(url, timeout=5)
+        data = response.json()
 
-# NOTE to change to deg F, change the URL to your preffered location after weather.com
-# Default is English-Philippines with Busan, South Korea as location_id
-# get html page
-# url = "https://weather.com/en-PH/weather/today/l/" + location_id
+        current = data["current_weather"]
+        daily = data["daily"]
 
-html_data = PyQuery(url=url)
+        # Extracting values
+        temp = f"{round(current['temperature'])}°C"
+        status_code = str(current["weathercode"])
+        icon = weather_icons.get(status_code, weather_icons["default"])
 
-# current temperature
-temp = html_data("span[data-testid='TemperatureValue']").eq(0).text()
+        # Feels like (using daily max apparent as proxy or current)
+        temp_feel = f"{round(daily['apparent_temperature_max'][0])}°C"
 
-# current status phrase
-status = html_data("div[data-testid='wxPhrase']").text()
-status = f"{status[:16]}.." if len(status) > 17 else status
+        # Min/Max
+        temp_min = f"{round(daily['temperature_2m_min'][0])}°C"
+        temp_max = f"{round(daily['temperature_2m_max'][0])}°C"
 
-# status code
-status_code = html_data("#regionHeader").attr("class").split(" ")[2].split("-")[2]
+        # Wind & Humidity (Open-Meteo current includes windspeed)
+        wind_speed = f"{current['windspeed']} km/h"
+        # Precipitation chance for the current hour
+        rain_chance = data["hourly"]["precipitation_probability"][0]
 
-# status icon
-icon = (
-    weather_icons[status_code]
-    if status_code in weather_icons
-    else weather_icons["default"]
-)
+        # Construct Tooltip
+        tooltip_text = (
+            f'<span size="xx-large">{temp}</span>\n'
+            f"<big> {icon}</big>\n"
+            f"Feels like {temp_feel}\n\n"
+            f"<b>  {temp_min}\t\t  {temp_max}</b>\n"
+            f"  {wind_speed}\t {rain_chance}%\n"
+        )
 
-# temperature feels like
-temp_feel = html_data(
-    "div[data-testid='FeelsLikeSection'] > span > span[data-testid='TemperatureValue']"
-).text()
-temp_feel_text = f"Feels like {temp_feel}c"
+        # Waybar Output
+        out_data = {
+            "text": f"{icon}  {temp}",
+            "alt": status_code,
+            "tooltip": tooltip_text,
+            "class": f"weather-{status_code}",
+        }
 
-# min-max temperature
-temp_min = (
-    html_data("div[data-testid='wxData'] > span[data-testid='TemperatureValue']")
-    .eq(1)
-    .text()
-)
-temp_max = (
-    html_data("div[data-testid='wxData'] > span[data-testid='TemperatureValue']")
-    .eq(0)
-    .text()
-)
-temp_min_max = f"  {temp_min}\t\t  {temp_max}"
+        # Cache for other scripts
+        simple_weather = (
+            f"{icon} {temp}\nFeels: {temp_feel}\nMin/Max: {temp_min}/{temp_max}"
+        )
+        cache_path = os.path.expanduser("~/.cache/.weather_cache")
+        with open(cache_path, "w") as file:
+            file.write(simple_weather)
 
-# wind speed
-wind_speed = str(html_data("span[data-testid='Wind'] > span").text())
-wind_text = f"  {wind_speed}"
+        return json.dumps(out_data)
 
-# humidity
-humidity = html_data("span[data-testid='PercentageValue']").text()
-humidity_text = f"  {humidity}"
+    except Exception as e:
+        return json.dumps({"text": "󰖙 --°C", "tooltip": f"Error: {str(e)}"})
 
-# visibility
-visibility = html_data("span[data-testid='VisibilityValue']").text()
-visibility_text = f"  {visibility}"
 
-# air quality index
-air_quality_index = html_data("text[data-testid='DonutChartValue']").text()
-
-# hourly rain prediction
-prediction = html_data("section[aria-label='Hourly Forecast']")(
-    "div[data-testid='SegmentPrecipPercentage'] > span"
-).text()
-prediction = prediction.replace("Chance of Rain", "")
-prediction = f"\n\n (hourly) {prediction}" if len(prediction) > 0 else prediction
-
-# tooltip text
-tooltip_text = str.format(
-    "\t\t{}\t\t\n{}\n{}\n{}\n\n{}\n{}\n{}{}",
-    f'<span size="xx-large">{temp}</span>',
-    f"<big> {icon}</big>",
-    f"<b>{status}</b>",
-    f"<small>{temp_feel_text}</small>",
-    f"<b>{temp_min_max}</b>",
-    f"{wind_text}\t{humidity_text}",
-    f"{visibility_text}\tAQI {air_quality_index}",
-    f"<i> {prediction}</i>",
-)
-
-# print waybar module data
-out_data = {
-    "text": f"{icon}  {temp}",
-    "alt": status,
-    "tooltip": tooltip_text,
-    "class": status_code,
-}
-print(json.dumps(out_data))
-
-simple_weather = (
-    f"{icon}  {status}\n"
-    + f"  {temp} ({temp_feel_text})\n"
-    + f"{wind_text} \n"
-    + f"{humidity_text} \n"
-    + f"{visibility_text} AQI{air_quality_index}\n"
-)
-
-try:
-    with open(os.path.expanduser("~/.cache/.weather_cache"), "w") as file:
-        file.write(simple_weather)
-except Exception as e:
-    print(f"Error writing to cache: {e}")
+if __name__ == "__main__":
+    print(get_weather())

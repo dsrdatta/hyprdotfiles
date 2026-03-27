@@ -2,8 +2,8 @@
 # /* ---- 💫 https://github.com/JaKooLit 💫 ---- */  ##
 # Wallust Colors for current wallpaper
 
-# Define the path to the swww cache directory
-cache_dir="$HOME/.cache/swww/"
+# Define the path to the awww cache directory
+cache_dir="$HOME/.cache/awww/"
 
 # Get a list of monitor outputs
 monitor_outputs=($(ls "$cache_dir"))
@@ -24,16 +24,16 @@ if [ -f "$cache_file" ]; then
     echo $wallpaper_path
     # symlink the wallpaper to the location Rofi can access
     if ln -sf "$wallpaper_path" "$HOME/.config/rofi/.current_wallpaper"; then
-        ln_success=true  # Set the flag to true upon successful execution
+        ln_success=true # Set the flag to true upon successful execution
     fi
     # copy the wallpaper for wallpaper effects
-	cp -r "$wallpaper_path" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current"
+    cp -r "$wallpaper_path" "$HOME/.config/hypr/wallpaper_effects/.wallpaper_current"
 fi
 
 # Check the flag before executing further commands
 if [ "$ln_success" = true ]; then
     # execute wallust
-	echo 'about to execute wallust'
+    echo 'about to execute wallust'
     # execute wallust skipping tty and terminal changes
     wallust run "$wallpaper_path" -s &
 fi

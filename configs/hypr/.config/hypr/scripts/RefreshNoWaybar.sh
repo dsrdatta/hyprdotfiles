@@ -11,9 +11,9 @@ UserScripts=$HOME/.config/hypr/UserScripts
 # Define file_exists function
 file_exists() {
     if [ -e "$1" ]; then
-        return 0  # File exists
+        return 0 # File exists
     else
-        return 1  # File does not exist
+        return 1 # File does not exist
     fi
 }
 
@@ -29,7 +29,7 @@ done
 ags -q && ags &
 
 # Wallust refresh
-${SCRIPTSDIR}/WallustSwww.sh &
+${SCRIPTSDIR}/Wallustawww.sh &
 
 # reload swaync
 swaync-client --reload-config
@@ -39,6 +39,5 @@ sleep 1
 if file_exists "${UserScripts}/RainbowBorders.sh"; then
     ${UserScripts}/RainbowBorders.sh &
 fi
-
 
 exit 0
